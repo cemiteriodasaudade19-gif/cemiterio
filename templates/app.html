@@ -136,7 +136,7 @@ tbody td{padding:8px 13px;white-space:nowrap;max-width:200px;overflow:hidden;tex
     <button class="nt" data-pg="mapa" onclick="navTo(this)">🗺 Mapa</button>
     <button class="nt" data-pg="registros" onclick="navTo(this)">📋 Registros</button>
     <button class="nt" data-pg="relatorios" onclick="navTo(this)">📄 Relatórios</button>
-    <button class="nt hidden" id="tabAdmin" data-pg="admin" onclick="navTo(this)">⚙ Admin</button>
+    <button class="nt" id="tabAdmin" data-pg="admin" onclick="navTo(this)">⚙ Admin</button>
   </div>
   <div class="nav-right">
     <span class="nalert" id="navAlerta" onclick="navToAlerts()" style="display:none">⚠️ <span id="navAlertaNum">0</span></span>
@@ -226,9 +226,9 @@ tbody td{padding:8px 13px;white-space:nowrap;max-width:200px;overflow:hidden;tex
     <select id="fHistorico" onchange="buscar()"><option value="">Histórico</option></select>
   </div>
   <div class="toolbar">
-    <button class="btn g" id="btnNovo" onclick="abrirNovo()" style="display:none">＋ Novo</button>
+    <button class="btn g" id="btnNovo" onclick="abrirNovo()">＋ Novo</button>
     <button class="btn" onclick="exportarFiltrado()">⬇ Exportar filtro</button>
-    <button class="btn a" id="btnSalvar" onclick="salvarBase()" style="display:none">💾 Salvar base Excel</button>
+    <button class="btn a" id="btnSalvar" onclick="salvarBase()">💾 Salvar base Excel</button>
     <span id="regInfo" style="font-size:12px;color:var(--t2)"></span>
   </div>
   <div class="tcard">
@@ -312,14 +312,7 @@ const COLS=[
 async function init(){
   const me=await api('/api/me');
   USER=me; perfil=me.perfil;
-  document.getElementById('navUser').textContent=`${me.nome} (${me.perfil})`;
-  if(perfil==='admin'){
-    document.getElementById('tabAdmin').classList.remove('hidden');
-    document.getElementById('btnNovo').style.display='';
-    document.getElementById('btnSalvar').style.display='';
-  } else if(perfil==='operador'){
-    document.getElementById('btnNovo').style.display='';
-  }
+  document.getElementById('navUser').textContent=`${me.nome}`;
   await carregarOpcoes();
   await buscar();
   await carregarDash();
@@ -666,8 +659,8 @@ async function verDetalhe(id){
     </div>
     <div class="mfooter">
       <button class="btn" onclick="fecharOv('ovDetail')">Fechar</button>
-      ${perfil!=='consulta'?`<button class="btn g" onclick="fecharOv('ovDetail');abrirEdicao(${id})">✏️ Editar</button>`:''}
-      ${perfil==='admin'?`<button class="btn r" onclick="excluir(${id})">🗑 Excluir</button>`:''}
+      ${true?`<button class="btn g" onclick="fecharOv('ovDetail');abrirEdicao(${id})">✏️ Editar</button>`:''}
+      <button class="btn r" onclick="excluir(${id})">🗑 Excluir</button>
     </div>`;
   document.getElementById('ovDetail').classList.add('open');
 }
