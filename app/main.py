@@ -53,8 +53,25 @@ def logout():
     return resp
 
 @app.get("/app", response_class=HTMLResponse)
-def main_app(request: Request, user=Depends(get_current_user)):
-    return templates.TemplateResponse("app.html", {"request": request, "user": user})
+def main_app(request: Request):
+    from fastapi.responses import RedirectResponse
+    from jose import jwt, JWTError
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/", status_code=302)
+    try:
+        from app.auth import SECRET_KEY, ALGORITHM
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return RedirectResponse(url="/", status_code=302)
+        with db() as conn:
+            user = conn.execute("SELECT * FROM usuarios WHERE id=? AND ativo=1", (user_id,)).fetchone()
+        if not user:
+            return RedirectResponse(url="/", status_code=302)
+        return templates.TemplateResponse("app.html", {"request": request, "user": dict(user)})
+    except Exception:
+        return RedirectResponse(url="/", status_code=302)
 
 @app.get("/api/me")
 def me(user=Depends(get_current_user)):
