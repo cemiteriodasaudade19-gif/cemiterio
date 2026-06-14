@@ -6,10 +6,7 @@ from fastapi.templating import Jinja2Templates
 from typing import Optional
 
 from app.database import db, init_db, importar_xlsx
-from app.auth import (
-    authenticate_user, create_token, get_current_user,
-    require_admin, require_operador, hash_password
-)
+from app.auth import authenticate_user, create_token, hash_password
 
 app = FastAPI(title="Sistema Cemitério", docs_url=None, redoc_url=None)
 
@@ -31,19 +28,20 @@ def health():
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/app", status_code=302)
 
 @app.post("/auth/login")
 def login(response: Response, login: str = Form(...), senha: str = Form(...)):
     user = authenticate_user(login, senha)
     if not user:
         raise HTTPException(status_code=401, detail="Login ou senha incorretos")
-    token = create_token({"sub": user["id"], "perfil": user["perfil"]})
+    token = create_token({"sub": 1, "perfil": user["perfil"]})
     resp = JSONResponse({"ok": True, "perfil": user["perfil"], "nome": user["nome"]})
     resp.set_cookie("access_token", token, httponly=True, samesite="lax", max_age=28800, secure=True)
     with db() as conn:
         conn.execute("INSERT INTO auditoria (usuario_id,acao,detalhe) VALUES (?,?,?)",
-                     (user["id"], "login", f"Login de {user['login']}"))
+                     (1, "login", f"Login de {user['login']}"))
     return resp
 
 @app.post("/auth/logout")
@@ -54,28 +52,11 @@ def logout():
 
 @app.get("/app", response_class=HTMLResponse)
 def main_app(request: Request):
-    from fastapi.responses import RedirectResponse
-    from jose import jwt, JWTError
-    token = request.cookies.get("access_token")
-    if not token:
-        return RedirectResponse(url="/", status_code=302)
-    try:
-        from app.auth import SECRET_KEY, ALGORITHM
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        if not user_id:
-            return RedirectResponse(url="/", status_code=302)
-        with db() as conn:
-            user = conn.execute("SELECT * FROM usuarios WHERE id=? AND ativo=1", (user_id,)).fetchone()
-        if not user:
-            return RedirectResponse(url="/", status_code=302)
-        return templates.TemplateResponse("app.html", {"request": request, "user": dict(user)})
-    except Exception:
-        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse("app.html", {"request": request, "user": {"nome": "Usuário", "perfil": "admin"}})
 
 @app.get("/api/me")
-def me(user=Depends(get_current_user)):
-    return {"id": user["id"], "nome": user["nome"], "perfil": user["perfil"], "login": user["login"]}
+def me():
+    return {"id": 1, "nome": user["nome"], "perfil": user["perfil"], "login": user["login"]}
 
 # ── FALECIDOS ─────────────────────────────────────────────────────────────────
 @app.get("/api/falecidos")
@@ -85,7 +66,7 @@ def listar(
     historico: str = Query(""), vencidos: str = Query(""),
     page: int = Query(1), per_page: int = Query(50),
     sort: str = Query("nome"), dir: str = Query("asc"),
-    user=Depends(get_current_user)
+    
 ):
     allowed = {"nome","dtfaleci","sep_quadra","sep_bloclote","exa_datexu","numctfal","sep_dtprevexum"}
     sort = sort if sort in allowed else "nome"
@@ -114,7 +95,7 @@ def listar(
     return {"total": total, "pages": math.ceil(total/per_page), "page": page, "data": [dict(r) for r in rows]}
 
 @app.get("/api/falecidos/{fid}")
-def get_um(fid: int, user=Depends(get_current_user)):
+def get_um(fid: int):
     with db() as conn:
         row = conn.execute("SELECT * FROM falecidos WHERE id=?", (fid,)).fetchone()
     if not row: raise HTTPException(404, "Não encontrado")
@@ -132,43 +113,43 @@ CAMPOS = [
 ]
 
 @app.post("/api/falecidos")
-def criar(data: dict, user=Depends(require_operador)):
+def criar(data: dict):
     vals = {c: data.get(c) for c in CAMPOS if data.get(c) is not None}
-    vals["criado_por"] = user["id"]
+    vals["criado_por"] = 1
     if "nome" in vals: vals["nomepesq"] = vals["nome"].upper()
     keys = list(vals.keys())
     with db() as conn:
         cur = conn.execute(f"INSERT INTO falecidos ({','.join(keys)}) VALUES ({','.join(['?']*len(keys))})", list(vals.values()))
         fid = cur.lastrowid
         conn.execute("INSERT INTO auditoria (usuario_id,acao,tabela,registro_id,detalhe) VALUES (?,?,?,?,?)",
-                     (user["id"],"criar","falecidos",fid,vals.get("nome","")))
+                     (1,"criar","falecidos",fid,vals.get("nome","")))
     return {"id": fid}
 
 @app.put("/api/falecidos/{fid}")
-def editar(fid: int, data: dict, user=Depends(require_operador)):
+def editar(fid: int, data: dict):
     vals = {c: data.get(c) for c in CAMPOS if c in data}
     if "nome" in vals: vals["nomepesq"] = vals["nome"].upper()
-    vals["atualizado_por"] = user["id"]
+    vals["atualizado_por"] = 1
     sets = ", ".join(f"{k}=?" for k in vals) + ", atualizado_em=datetime('now','localtime')"
     with db() as conn:
         conn.execute(f"UPDATE falecidos SET {sets} WHERE id=?", list(vals.values()) + [fid])
         conn.execute("INSERT INTO auditoria (usuario_id,acao,tabela,registro_id,detalhe) VALUES (?,?,?,?,?)",
-                     (user["id"],"editar","falecidos",fid,vals.get("nome","")))
+                     (1,"editar","falecidos",fid,vals.get("nome","")))
     return {"ok": True}
 
 @app.delete("/api/falecidos/{fid}")
-def deletar(fid: int, user=Depends(require_admin)):
+def deletar(fid: int):
     with db() as conn:
         row = conn.execute("SELECT nome FROM falecidos WHERE id=?", (fid,)).fetchone()
         if not row: raise HTTPException(404)
         conn.execute("DELETE FROM falecidos WHERE id=?", (fid,))
         conn.execute("INSERT INTO auditoria (usuario_id,acao,tabela,registro_id,detalhe) VALUES (?,?,?,?,?)",
-                     (user["id"],"deletar","falecidos",fid,row["nome"]))
+                     (1,"deletar","falecidos",fid,row["nome"]))
     return {"ok": True}
 
 # ── DASHBOARD / MAPA ──────────────────────────────────────────────────────────
 @app.get("/api/dashboard")
-def dashboard(user=Depends(get_current_user)):
+def dashboard():
     with db() as conn:
         total = conn.execute("SELECT COUNT(*) FROM falecidos").fetchone()[0]
         masc  = conn.execute("SELECT COUNT(*) FROM falecidos WHERE sexofale='M'").fetchone()[0]
@@ -217,7 +198,7 @@ def dashboard(user=Depends(get_current_user)):
     }
 
 @app.get("/api/mapa")
-def mapa(user=Depends(get_current_user)):
+def mapa():
     with db() as conn:
         rows = conn.execute("""
             SELECT sep_quadra, sep_bloclote,
@@ -236,7 +217,7 @@ def mapa(user=Depends(get_current_user)):
     return [dict(r) for r in rows]
 
 @app.get("/api/alertas")
-def alertas(dias: int = Query(0), user=Depends(get_current_user)):
+def alertas(dias: int = Query(0)):
     if dias == 0:
         cond = "AND date(substr(sep_dtprevexum,7,4)||'-'||substr(sep_dtprevexum,1,2)||'-'||substr(sep_dtprevexum,4,2)) < date('now')"
     else:
@@ -252,7 +233,7 @@ def alertas(dias: int = Query(0), user=Depends(get_current_user)):
     return [dict(r) for r in rows]
 
 @app.get("/api/relatorio/{tipo}")
-def relatorio(tipo: str, user=Depends(get_current_user)):
+def relatorio(tipo: str):
     with db() as conn:
         if tipo == "vencidos":
             rows = conn.execute("""SELECT numctfal,nome,sep_quadra,sep_bloclote,sep_tipojaz,sep_dtprevexum
@@ -298,7 +279,7 @@ def relatorio(tipo: str, user=Depends(get_current_user)):
 
 # ── OPÇÕES ────────────────────────────────────────────────────────────────────
 @app.get("/api/opcoes")
-def opcoes(user=Depends(get_current_user)):
+def opcoes():
     with db() as conn:
         quadras = [r[0] for r in conn.execute("SELECT DISTINCT sep_quadra FROM falecidos WHERE sep_quadra IS NOT NULL AND sep_quadra!='' ORDER BY sep_quadra").fetchall()]
         jazigos = [r[0] for r in conn.execute("SELECT DISTINCT sep_tipojaz FROM falecidos WHERE sep_tipojaz IS NOT NULL AND sep_tipojaz!='' ORDER BY sep_tipojaz").fetchall()]
@@ -308,13 +289,13 @@ def opcoes(user=Depends(get_current_user)):
 
 # ── USUÁRIOS ──────────────────────────────────────────────────────────────────
 @app.get("/api/usuarios")
-def listar_usuarios(user=Depends(require_admin)):
+def listar_usuarios():
     with db() as conn:
         rows = conn.execute("SELECT id,nome,login,perfil,ativo,criado_em FROM usuarios ORDER BY nome").fetchall()
     return [dict(r) for r in rows]
 
 @app.post("/api/usuarios")
-def criar_usuario(data: dict, user=Depends(require_admin)):
+def criar_usuario(data: dict):
     if not {"nome","login","senha","perfil"}.issubset(data.keys()):
         raise HTTPException(400, "Campos obrigatórios: nome, login, senha, perfil")
     if data["perfil"] not in ("admin","operador","consulta"):
@@ -328,7 +309,7 @@ def criar_usuario(data: dict, user=Depends(require_admin)):
     return {"ok": True}
 
 @app.put("/api/usuarios/{uid}")
-def editar_usuario(uid: int, data: dict, user=Depends(require_admin)):
+def editar_usuario(uid: int, data: dict):
     sets, params = [], []
     for f in ("nome","login","perfil","ativo"):
         if f in data: sets.append(f"{f}=?"); params.append(data[f])
@@ -342,24 +323,24 @@ def editar_usuario(uid: int, data: dict, user=Depends(require_admin)):
 
 # ── IMPORTAÇÃO ────────────────────────────────────────────────────────────────
 @app.post("/api/importar")
-async def importar(file: UploadFile = File(...), user=Depends(require_admin)):
+async def importar(file: UploadFile = File(...)):
     if not file.filename.endswith((".xlsx",".xls")):
         raise HTTPException(400, "Apenas .xlsx ou .xls")
-    tmp = f"/tmp/import_{user['id']}.xlsx"
+    tmp = f"/tmp/import_{1}.xlsx"
     with open(tmp, "wb") as f:
         shutil.copyfileobj(file.file, f)
     try:
-        total = importar_xlsx(tmp, user["id"])
+        total = importar_xlsx(tmp, 1)
         with db() as conn:
             conn.execute("INSERT INTO auditoria (usuario_id,acao,detalhe) VALUES (?,?,?)",
-                         (user["id"],"importar",f"Importados {total} registros"))
+                         (1,"importar",f"Importados {total} registros"))
         return {"ok": True, "importados": total}
     finally:
         if os.path.exists(tmp): os.remove(tmp)
 
 # ── AUDITORIA ─────────────────────────────────────────────────────────────────
 @app.get("/api/auditoria")
-def auditoria(page: int = 1, user=Depends(require_admin)):
+def auditoria(page: int = 1):
     with db() as conn:
         total = conn.execute("SELECT COUNT(*) FROM auditoria").fetchone()[0]
         rows = conn.execute("""SELECT a.*, u.nome usuario_nome FROM auditoria a
