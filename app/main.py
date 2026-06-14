@@ -40,7 +40,7 @@ def login(response: Response, login: str = Form(...), senha: str = Form(...)):
         raise HTTPException(status_code=401, detail="Login ou senha incorretos")
     token = create_token({"sub": user["id"], "perfil": user["perfil"]})
     resp = JSONResponse({"ok": True, "perfil": user["perfil"], "nome": user["nome"]})
-    resp.set_cookie("access_token", token, httponly=True, samesite="lax", max_age=28800)
+    resp.set_cookie("access_token", token, httponly=True, samesite="lax", max_age=28800, secure=True)
     with db() as conn:
         conn.execute("INSERT INTO auditoria (usuario_id,acao,detalhe) VALUES (?,?,?)",
                      (user["id"], "login", f"Login de {user['login']}"))
