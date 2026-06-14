@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Cemitério</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f2ee;--surface:#fff;--s2:#f0ede6;--border:#ddd9d0;--text:#1a1a18;--t2:#5a5a56;--t3:#9a9a94;--green:#2a5c3f;--green2:#3d7a57;--gl:#e8f2ec;--amber:#c07800;--al:#fdf3e0;--red:#8b2020;--rl:#fdeaea;--blue:#1a3a6b;--bl:#e8eef9;--orange:#b04800;--ol:#fff0e6;--r:10px;--rs:6px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+.nav{background:var(--green);color:#fff;height:52px;display:flex;align-items:center;padding:0 18px;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.nav-brand{font-size:15px;font-weight:700;margin-right:24px;white-space:nowrap;}
+.nav-brand span{opacity:.55;font-weight:400;}
+.nav-tabs{display:flex;height:100%;gap:0;overflow-x:auto;}
+.nt{background:none;border:none;color:rgba(255,255,255,.65);font-size:12.5px;font-weight:500;padding:0 14px;cursor:pointer;border-bottom:3px solid transparent;height:100%;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;}
+.nt:hover{color:#fff;background:rgba(255,255,255,.08);}
+.nt.active{color:#fff;border-bottom-color:rgba(255,255,255,.85);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:13px;}
+.nbadge{background:rgba(255,255,255,.15);color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;}
+.nalert{background:#c07800;color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.7;}}
+.nuser{color:rgba(255,255,255,.8);font-size:12px;}
+.nlogout{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;}
+.page{display:none;padding:20px;max-width:1200px;margin:0 auto;}
+.page.active{display:block;}
+.mrow{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px;}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;}
+.mc.g{border-left:3px solid var(--green);}
+.mc.a{border-left:3px solid var(--amber);}
+.mc.b{border-left:3px solid var(--blue);}
+.mc.r{border-left:3px solid var(--red);cursor:pointer;}
+.mc.r:hover{background:var(--rl);}
+.mc.o{border-left:3px solid var(--orange);cursor:pointer;}
+.mc.o:hover{background:var(--ol);}
+.mc .lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.mc .val{font-size:22px;font-weight:700;line-height:1;}
+.mc .sub{font-size:10px;color:var(--t3);margin-top:3px;}
+.alert-banner{background:var(--rl);border:1px solid #e8a0a0;border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.alert-banner h4{font-size:13px;font-weight:600;color:var(--red);}
+.alert-banner p{font-size:12px;color:var(--red);opacity:.8;}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.cc.wide{grid-column:1/-1;}
+.cc h3{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.toolbar{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+input[type=text],select{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--rs);padding:7px 10px;font-size:13px;outline:none;}
+input[type=text]:focus,select:focus{border-color:var(--green);}
+input.wide{flex:1;min-width:180px;}
+.btn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--rs);padding:6px 12px;font-size:12.5px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn:hover{background:var(--s2);}
+.btn.g{background:var(--green);color:#fff;border-color:var(--green);}
+.btn.g:hover{background:var(--green2);}
+.btn.r{background:var(--red);color:#fff;border-color:var(--red);}
+.btn.a{background:var(--amber);color:#fff;border-color:var(--amber);}
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.twrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:var(--s2);font-weight:600;font-size:10.5px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none;}
+thead th:hover{color:var(--text);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--gl);cursor:pointer;}
+tbody tr.row-alert{background:#fff8f8;}
+tbody tr.row-alert:hover{background:var(--rl);}
+tbody tr.row-warn{background:#fffbf0;}
+tbody tr.row-warn:hover{background:var(--al);}
+tbody td{padding:8px 13px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--t2);}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.bm{background:var(--bl);color:var(--blue);}
+.bf{background:#fdf0f8;color:#7a2060;}
+.bex{background:var(--gl);color:var(--green);}
+.bno{background:var(--s2);color:var(--t3);}
+.bvenc{background:var(--rl);color:var(--red);}
+.bprox{background:var(--al);color:var(--amber);}
+.badm{background:var(--al);color:var(--amber);}
+.bop{background:var(--bl);color:var(--blue);}
+.bco{background:var(--gl);color:var(--green);}
+.mapcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;overflow-x:auto;}
+.mgrid{display:flex;flex-wrap:wrap;gap:10px;}
+.qblock{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.qhdr{background:var(--s2);padding:5px 9px;font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+.qlotes{display:grid;padding:7px;gap:3px;}
+.lote{border-radius:3px;height:13px;cursor:pointer;transition:opacity .1s;}
+.lote:hover{opacity:.7;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);width:660px;max-width:100%;box-shadow:0 12px 48px rgba(0,0,0,.22);margin:auto;}
+.modal.wide{width:780px;}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:var(--r) var(--r) 0 0;position:sticky;top:0;z-index:1;}
+.mhdr h2{font-size:15px;font-weight:600;}
+.mclose{background:none;border:none;font-size:22px;cursor:pointer;color:var(--t2);line-height:1;}
+.mbody{padding:20px;max-height:78vh;overflow-y:auto;}
+.mfooter{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border);background:var(--surface);border-radius:0 0 var(--r) var(--r);}
+.slbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin:16px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.slbl:first-child{margin-top:0;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fgrid.three{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);}
+.fg input,.fg select,.fg textarea{border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;font-size:13px;color:var(--text);background:var(--surface);outline:none;font-family:inherit;width:100%;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--green);}
+.fg textarea{resize:vertical;min-height:58px;}
+.vfield .fl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+.vfield .fv{font-size:13px;color:var(--text);font-weight:500;}
+.vfield .fv.empty{color:var(--t3);font-style:italic;font-weight:400;}
+.rel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.rel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;cursor:pointer;transition:all .15s;}
+.rel-card:hover{border-color:var(--green);background:var(--gl);}
+.rel-card h3{font-size:14px;font-weight:600;margin-bottom:6px;}
+.rel-card p{font-size:12px;color:var(--t2);line-height:1.5;}
+.rel-card .ico{font-size:28px;margin-bottom:10px;}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--green);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;pointer-events:none;}
+.toast.show{transform:none;opacity:1;}
+.toast.err{background:var(--red);}
+.toast.warn{background:var(--amber);}
+#tooltip{position:fixed;background:#1a1a18;color:#fff;font-size:11px;padding:6px 10px;border-radius:6px;pointer-events:none;z-index:400;display:none;max-width:220px;line-height:1.5;}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media print{.nav,.toolbar,.pag,.mfooter,.btn,.nav-right{display:none!important;}.overlay{position:static;background:none;display:block;padding:0;}.modal{box-shadow:none;border:none;width:100%;}.mbody{max-height:none;overflow:visible;}}
+@media(max-width:768px){.mrow{grid-template-columns:1fr 1fr 1fr;}.cgrid{grid-template-columns:1fr;}.cc.wide{grid-column:1;}.rel-grid{grid-template-columns:1fr;}.page{padding:14px;}}
+</style>
+</head>
+<body>
+<div id="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<nav class="nav">
+  <span class="nav-brand">🏛 Cemitério <span>/ Controle</span></span>
+  <div class="nav-tabs">
+    <button class="nt active" data-pg="dashboard" onclick="navTo(this)">📊 Dashboard</button>
+    <button class="nt" data-pg="alertas" onclick="navTo(this)">🚨 Alertas</button>
+    <button class="nt" data-pg="graficos" onclick="navTo(this)">📈 Gráficos</button>
+    <button class="nt" data-pg="mapa" onclick="navTo(this)">🗺 Mapa</button>
+    <button class="nt" data-pg="registros" onclick="navTo(this)">📋 Registros</button>
+    <button class="nt" data-pg="relatorios" onclick="navTo(this)">📄 Relatórios</button>
+    <button class="nt hidden" id="tabAdmin" data-pg="admin" onclick="navTo(this)">⚙ Admin</button>
+  </div>
+  <div class="nav-right">
+    <span class="nalert" id="navAlerta" onclick="navToAlerts()" style="display:none">⚠️ <span id="navAlertaNum">0</span></span>
+    <span class="nuser" id="navUser">–</span>
+    <button class="nlogout" onclick="logout()">Sair</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div id="alertBanner" style="display:none" class="alert-banner" onclick="navToAlerts()">
+    <span style="font-size:28px">⚠️</span>
+    <div><h4 id="alertBannerTitle"></h4><p id="alertBannerSub"></p></div>
+  </div>
+  <div class="mrow" id="metricsRow"></div>
+  <div class="cgrid">
+    <div class="cc wide"><h3>Falecimentos por ano</h3><div style="height:200px"><canvas id="cAnos"></canvas></div></div>
+    <div class="cc"><h3>Tipos de jazigo</h3><div style="height:220px"><canvas id="cJazigo"></canvas></div></div>
+    <div class="cc"><h3>Distribuição por sexo</h3><div style="height:220px"><canvas id="cSexo"></canvas></div></div>
+  </div>
+  <div class="cc"><h3>Top quadras por volume</h3><div style="height:200px"><canvas id="cQuadras"></canvas></div></div>
+</div>
+
+<!-- ALERTAS -->
+<div class="page" id="page-alertas">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div><h2 style="font-size:16px;font-weight:600">🚨 Alertas de exumação</h2>
+      <p style="font-size:12px;color:var(--t2);margin-top:3px">Previsões vencidas sem exumação registrada</p></div>
+    <div style="display:flex;gap:8px;">
+      <select id="alertFiltro" onchange="carregarAlertas()">
+        <option value="0">Vencidos (todos)</option>
+        <option value="30">Próximos 30 dias</option>
+        <option value="90">Próximos 90 dias</option>
+        <option value="180">Próximos 180 dias</option>
+      </select>
+      <button class="btn a" onclick="exportarAlertas()">⬇ Exportar</button>
+    </div>
+  </div>
+  <div id="alertStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
+  <div class="tcard">
+    <div class="twrap"><table>
+      <thead><tr><th>Nº</th><th>Nome</th><th>Quadra</th><th>Lote</th><th>Jazigo</th><th>Previsão</th><th>Situação</th><th></th></tr></thead>
+      <tbody id="tbAlertas"></tbody>
+    </table></div>
+    <div class="pag"><span id="alertPagInfo">–</span>
+      <div style="display:flex;gap:4px;">
+        <button class="btn" onclick="changeAlertPage(-1)">‹</button>
+        <button class="btn" onclick="changeAlertPage(1)">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRÁFICOS -->
+<div class="page" id="page-graficos">
+  <div class="cgrid">
+    <div class="cc wide"><h3>Óbitos vs Exumações por ano</h3><div style="height:220px"><canvas id="cOvsE"></canvas></div></div>
+    <div class="cc"><h3>Exumações por ano</h3><div style="height:220px"><canvas id="cExuAnos"></canvas></div></div>
+    <div class="cc"><h3>Óbitos por mês (acumulado)</h3><div style="height:220px"><canvas id="cMeses"></canvas></div></div>
+    <div class="cc wide"><h3>% Exumados por quadra (top 15)</h3><div style="height:240px"><canvas id="cPctExu"></canvas></div></div>
+  </div>
+</div>
+
+<!-- MAPA -->
+<div class="page" id="page-mapa">
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+    <select id="mapaMode" onchange="renderMapa()">
+      <option value="ocupacao">Ocupação de lotes</option>
+      <option value="exumacao">Exumações realizadas</option>
+      <option value="alertas">Exumações vencidas</option>
+    </select>
+    <span style="font-size:12px;color:var(--t3)">Passe o mouse para detalhes · Clique para filtrar</span>
+  </div>
+  <div id="mapaLeg" style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;"></div>
+  <div class="mapcard"><div class="mgrid" id="mapaGrid"></div></div>
+</div>
+
+<!-- REGISTROS -->
+<div class="page" id="page-registros">
+  <div class="toolbar">
+    <input type="text" class="wide" id="srch" placeholder="🔍 Nome, mãe, pai, nº, ossário, lacre, histórico…" oninput="debounce()">
+    <select id="fSexo" onchange="buscar()"><option value="">Sexo</option><option value="M">Masculino</option><option value="F">Feminino</option></select>
+    <select id="fExum" onchange="buscar()"><option value="">Exumação</option><option value="sim">Com exumação</option><option value="nao">Sem exumação</option></select>
+    <select id="fQuadra" onchange="buscar()"><option value="">Quadra</option></select>
+    <select id="fJazigo" onchange="buscar()"><option value="">Jazigo</option></select>
+    <select id="fDestino" onchange="buscar()"><option value="">Destino exum.</option></select>
+    <select id="fHistorico" onchange="buscar()"><option value="">Histórico</option></select>
+  </div>
+  <div class="toolbar">
+    <button class="btn g" id="btnNovo" onclick="abrirNovo()" style="display:none">＋ Novo</button>
+    <button class="btn" onclick="exportarFiltrado()">⬇ Exportar filtro</button>
+    <button class="btn a" id="btnSalvar" onclick="salvarBase()" style="display:none">💾 Salvar base Excel</button>
+    <span id="regInfo" style="font-size:12px;color:var(--t2)"></span>
+  </div>
+  <div class="tcard">
+    <div class="twrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    <div class="pag"><span id="pagInfo">–</span>
+      <div style="display:flex;gap:4px;"><button class="btn" onclick="changePage(-1)">‹</button><button class="btn" onclick="changePage(1)">›</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- RELATÓRIOS -->
+<div class="page" id="page-relatorios">
+  <h2 style="font-size:16px;font-weight:600;margin-bottom:16px">📄 Relatórios</h2>
+  <div class="rel-grid">
+    <div class="rel-card" onclick="gerarRel('vencidos')"><div class="ico">⚠️</div><h3>Exumações vencidas</h3><p>Previsão ultrapassada sem exumação registrada.</p></div>
+    <div class="rel-card" onclick="gerarRel('proximos30')"><div class="ico">📅</div><h3>Próximos 30 dias</h3><p>Previsões de exumação no próximo mês.</p></div>
+    <div class="rel-card" onclick="gerarRel('proximos90')"><div class="ico">🗓</div><h3>Próximos 90 dias</h3><p>Previsões de exumação no próximo trimestre.</p></div>
+    <div class="rel-card" onclick="gerarRel('exumados')"><div class="ico">✅</div><h3>Exumações realizadas</h3><p>Todos os registros com exumação concluída.</p></div>
+    <div class="rel-card" onclick="gerarRel('lotesVagos')"><div class="ico">🗺</div><h3>Lotes por quadra</h3><p>Ocupação e exumações agrupadas por quadra.</p></div>
+    <div class="rel-card" onclick="gerarRel('anual')"><div class="ico">📊</div><h3>Resumo anual</h3><p>Óbitos e exumações agrupados por ano.</p></div>
+  </div>
+  <div id="relOutput"></div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 style="font-size:14px;font-weight:600">Usuários</h2>
+        <button class="btn g" onclick="abrirNovoUsuario()">＋ Novo</button>
+      </div>
+      <div class="tcard"><div class="twrap">
+        <table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Ativo</th><th></th></tr></thead>
+        <tbody id="tbUsuarios"></tbody></table>
+      </div></div>
+    </div>
+    <div>
+      <h2 style="font-size:14px;font-weight:600;margin-bottom:12px">Importar base Excel</h2>
+      <div class="tcard" style="padding:18px;">
+        <p style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px">Importe o <strong>FALECIDOS_CONSOLIDADO.xlsx</strong> para atualizar a base. Os dados existentes serão substituídos.</p>
+        <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="importar()">
+        <button class="btn g" onclick="document.getElementById('importFile').click()">📂 Selecionar arquivo</button>
+        <div id="importStatus" style="margin-top:10px;font-size:13px;color:var(--t2)"></div>
+      </div>
+      <h2 style="font-size:14px;font-weight:600;margin:18px 0 10px">Log de auditoria</h2>
+      <div class="tcard"><div class="twrap">
+        <table><thead><tr><th>Usuário</th><th>Ação</th><th>Data/hora</th></tr></thead>
+        <tbody id="tbAudit"></tbody></table>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="ovDetail" onclick="fecharOv('ovDetail',event)"><div class="modal" id="modDetail"></div></div>
+<div class="overlay" id="ovEdit" onclick="fecharOv('ovEdit',event)"><div class="modal wide" id="modEdit"></div></div>
+<div class="overlay" id="ovUsr" onclick="fecharOv('ovUsr',event)"><div class="modal" id="modUsr"></div></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────
+let USER=null, perfil=null;
+let regPage=1, sortCol='nome', sortDir='asc', regTotal=0;
+let alertPage=1; let alertData=[];
+let mapaData=[];
+let filteredCache=[];
+let charts={};
+let buscarTimer=null;
+let detailId=null;
+const PER=50, PERAL=100;
+
+const TIPOS_JAZ=['','1-Terreno Particular','2-Terreno PMTS','3-Columbário Adulto','4-Columbário Infantil','5-Gavetão','6-Nicho de Ossuário','7-Ossário Geral','8-Outro Cemitério','9-Sem Informação'];
+const COLS=[
+  {k:'numctfal',l:'Nº',w:'52px'},{k:'nome',l:'Nome',w:'200px'},{k:'sexofale',l:'Sx',w:'42px'},
+  {k:'dtfaleci',l:'Falecimento',w:'105px'},{k:'sep_quadra',l:'Quadra',w:'65px'},
+  {k:'sep_bloclote',l:'Lote',w:'48px'},{k:'sep_tipojaz',l:'Jazigo',w:'140px'},
+  {k:'sep_dtprevexum',l:'Prev.Exum.',w:'100px'},{k:'exa_datexu',l:'Exumação',w:'100px'},
+];
+
+// ── INIT ──────────────────────────────────────────────
+async function init(){
+  const me=await api('/api/me');
+  USER=me; perfil=me.perfil;
+  document.getElementById('navUser').textContent=`${me.nome} (${me.perfil})`;
+  if(perfil==='admin'){
+    document.getElementById('tabAdmin').classList.remove('hidden');
+    document.getElementById('btnNovo').style.display='';
+    document.getElementById('btnSalvar').style.display='';
+  } else if(perfil==='operador'){
+    document.getElementById('btnNovo').style.display='';
+  }
+  await carregarOpcoes();
+  await buscar();
+  await carregarDash();
+  await carregarMapa();
+}
+
+// ── API ───────────────────────────────────────────────
+async function api(url,opts={}){
+  const r=await fetch(url,{credentials:'include',...opts});
+  if(r.status===401){window.location.href='/';return;}
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||r.statusText);}
+  return r.json();
+}
+async function logout(){
+  await fetch('/auth/logout',{method:'POST',credentials:'include'});
+  window.location.href='/';
+}
+
+// ── UTILS ─────────────────────────────────────────────
+function toast(msg,tipo=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show'+(tipo?' '+tipo:'');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3200);
+}
+function fecharOv(id,e){
+  if(!e||e.target===document.getElementById(id))
+    document.getElementById(id).classList.remove('open');
+}
+function navTo(btn){
+  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  const pg=btn.dataset.pg;
+  document.getElementById('page-'+pg).classList.add('active');
+  if(pg==='dashboard') setTimeout(()=>carregarDash(),60);
+  else if(pg==='graficos') setTimeout(()=>carregarGraficos(),60);
+  else if(pg==='mapa') setTimeout(()=>renderMapa(),60);
+  else if(pg==='alertas') carregarAlertas();
+  else if(pg==='admin'){carregarUsuarios();carregarAuditoria();}
+}
+function navToAlerts(){navTo(document.querySelector('[data-pg="alertas"]'));}
+function debounce(){clearTimeout(buscarTimer);buscarTimer=setTimeout(()=>buscar(1),320);}
+window.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));});
+
+// ── DASHBOARD ─────────────────────────────────────────
+async function carregarDash(){
+  const d=await api('/api/dashboard');
+  const {total,masc,fem,exum,venc,prox30}=d.totais;
+  const el=document.getElementById('metricsRow');
+  if(el) el.innerHTML=`
+    <div class="mc g"><div class="lbl">Total</div><div class="val">${total.toLocaleString('pt-BR')}</div><div class="sub">registros</div></div>
+    <div class="mc"><div class="lbl">Masculino</div><div class="val">${masc.toLocaleString('pt-BR')}</div><div class="sub">${((masc/total)*100).toFixed(1)}%</div></div>
+    <div class="mc"><div class="lbl">Feminino</div><div class="val">${fem.toLocaleString('pt-BR')}</div><div class="sub">${((fem/total)*100).toFixed(1)}%</div></div>
+    <div class="mc a"><div class="lbl">Exumados</div><div class="val">${exum.toLocaleString('pt-BR')}</div><div class="sub">${((exum/total)*100).toFixed(1)}%</div></div>
+    <div class="mc r" onclick="navToAlerts()"><div class="lbl">⚠️ Vencidos</div><div class="val">${venc.toLocaleString('pt-BR')}</div><div class="sub">clique para ver</div></div>
+    <div class="mc o" onclick="navToAlerts()"><div class="lbl">📅 Próx. 30 dias</div><div class="val">${prox30.toLocaleString('pt-BR')}</div><div class="sub">previsões</div></div>`;
+  const bn=document.getElementById('alertBanner');
+  if(venc>0&&bn){bn.style.display='flex';document.getElementById('alertBannerTitle').textContent=`${venc.toLocaleString('pt-BR')} registros com exumação vencida`;document.getElementById('alertBannerSub').textContent='Clique para ver a lista completa.';}
+  const na=document.getElementById('navAlerta');
+  if(na){na.style.display=venc>0?'':'none';document.getElementById('navAlertaNum').textContent=venc.toLocaleString('pt-BR');}
+  mkChart('cAnos','bar',d.byYear.map(r=>r.ano),d.byYear.map(r=>r.total),'Óbitos','#2a5c3f');
+  const jl=d.byJazigo.map(r=>r.sep_tipojaz.replace(/^\d+-/,''));
+  mkDoughnut('cJazigo',jl,d.byJazigo.map(r=>r.total),['#2a5c3f','#1a3a6b','#c07800','#8b3060','#5a5a56','#8b2020','#3d7a57']);
+  const m2=allData&&allData.length?allData.filter(r=>r.sexofale==='M').length:masc;
+  mkDoughnut('cSexo',['Masculino','Feminino','Não inf.'],[masc,fem,total-masc-fem],['#1a3a6b','#8b3060','#ccc']);
+  mkChart('cQuadras','bar',d.byQuadra.map(r=>'Q-'+r.sep_quadra),d.byQuadra.map(r=>r.total),'','#3d7a57',true);
+}
+
+function mkChart(id,type,labels,data,label,color,horizontal=false){
+  const el=document.getElementById(id);if(!el)return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(el,{type,data:{labels,datasets:[{label,data,backgroundColor:color,borderRadius:3}]},
+    options:{indexAxis:horizontal?'y':'x',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{[horizontal?'x':'y']:{beginAtZero:true,grid:{color:'#e8e6e0'}},[horizontal?'y':'x']:{grid:{display:false}}}}});
+}
+function mkDoughnut(id,labels,data,colors){
+  const el=document.getElementById(id);if(!el)return;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(el,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}}}}});
+}
+
+async function carregarGraficos(){
+  const d=await api('/api/dashboard');
+  const all=[...new Set([...d.byYear.map(r=>r.ano),...d.byExuYear.map(r=>r.ano)])].filter(y=>parseInt(y)>=2000&&parseInt(y)<=2024).sort();
+  const ym=Object.fromEntries(d.byYear.map(r=>[r.ano,r.total]));
+  const em=Object.fromEntries(d.byExuYear.map(r=>[r.ano,r.total]));
+  const el=document.getElementById('cOvsE');
+  if(el){if(charts['cOvsE'])charts['cOvsE'].destroy();
+    charts['cOvsE']=new Chart(el,{type:'line',data:{labels:all,datasets:[
+      {label:'Óbitos',data:all.map(y=>ym[y]||0),borderColor:'#2a5c3f',backgroundColor:'rgba(42,92,63,.1)',tension:.3,fill:true},
+      {label:'Exumações',data:all.map(y=>em[y]||0),borderColor:'#c07800',backgroundColor:'rgba(192,120,0,.1)',tension:.3,fill:true}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
+      scales:{y:{beginAtZero:true,grid:{color:'#e8e6e0'}},x:{grid:{display:false}}}}});}
+  mkChart('cExuAnos','bar',d.byExuYear.map(r=>r.ano),d.byExuYear.map(r=>r.total),'Exumações','#c07800');
+  const mes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mm=Object.fromEntries(d.byMonth.map(r=>[r.mes,r.total]));
+  mkChart('cMeses','bar',mes,mes.map((_,i)=>mm[String(i+1).padStart(2,'0')]||0),'Óbitos','#3d7a57');
+  const tq=[...d.byQuadra].filter(r=>r.total>=20).sort((a,b)=>(b.exumados/b.total)-(a.exumados/a.total)).slice(0,15);
+  const el2=document.getElementById('cPctExu');
+  if(el2){if(charts['cPctExu'])charts['cPctExu'].destroy();
+    charts['cPctExu']=new Chart(el2,{type:'bar',data:{labels:tq.map(r=>'Q-'+r.sep_quadra),
+      datasets:[{label:'% Exumados',data:tq.map(r=>+((r.exumados/r.total)*100).toFixed(1)),backgroundColor:'#c07800',borderRadius:3}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#e8e6e0'}},y:{grid:{display:false}}}}});}
+}
+
+// ── ALERTAS ───────────────────────────────────────────
+async function carregarAlertas(){
+  const dias=parseInt(document.getElementById('alertFiltro').value);
+  const data=await api(`/api/alertas?dias=${dias}`);
+  alertData=data; alertPage=1;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const p7=new Date(hoje.getTime()+7*864e5), p30=new Date(hoje.getTime()+30*864e5);
+  const parseD=v=>{if(!v)return null;const p=String(v).split(' ')[0].split('/');if(p.length===3){const y=p[2].length===2?'20'+p[2]:p[2];return new Date(parseInt(y),parseInt(p[0])-1,parseInt(p[1]));}return null;};
+  const venc=data.filter(r=>{const d=parseD(r.sep_dtprevexum);return d&&d<hoje;}).length;
+  const s7=data.filter(r=>{const d=parseD(r.sep_dtprevexum);return d&&d>=hoje&&d<=p7;}).length;
+  const s30=data.filter(r=>{const d=parseD(r.sep_dtprevexum);return d&&d>p7&&d<=p30;}).length;
+  const el=document.getElementById('alertStats');
+  if(el)el.innerHTML=`
+    <div class="mc r"><div class="lbl">Vencidos</div><div class="val">${venc.toLocaleString('pt-BR')}</div><div class="sub">previsão ultrapassada</div></div>
+    <div class="mc o"><div class="lbl">Próx. 7 dias</div><div class="val">${s7.toLocaleString('pt-BR')}</div><div class="sub">urgente</div></div>
+    <div class="mc a"><div class="lbl">Próx. 30 dias</div><div class="val">${s30.toLocaleString('pt-BR')}</div><div class="sub">atenção</div></div>
+    <div class="mc g"><div class="lbl">Total</div><div class="val">${data.length.toLocaleString('pt-BR')}</div><div class="sub">nesta lista</div></div>`;
+  renderTbAlertas();
+}
+
+function renderTbAlertas(){
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const start=(alertPage-1)*PERAL;
+  const pg=alertData.slice(start,start+PERAL);
+  const parseD=v=>{if(!v)return null;const p=String(v).split(' ')[0].split('/');if(p.length===3){const y=p[2].length===2?'20'+p[2]:p[2];return new Date(parseInt(y),parseInt(p[0])-1,parseInt(p[1]));}return null;};
+  const tb=document.getElementById('tbAlertas');
+  if(tb)tb.innerHTML=pg.map(r=>{
+    const prev=parseD(r.sep_dtprevexum);
+    const dias=prev&&prev<hoje?Math.floor((hoje-prev)/864e5):null;
+    const jaz=(r.sep_tipojaz||'').replace(/^\d+-/,'').substring(0,18);
+    return `<tr class="row-alert" onclick="verDetalhe(${r.id})">
+      <td>${r.numctfal||'–'}</td><td title="${r.nome||''}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.nome||'–'}</td>
+      <td>${r.sep_quadra||'–'}</td><td>${r.sep_bloclote||'–'}</td><td>${jaz||'–'}</td>
+      <td>${r.sep_dtprevexum||'–'}</td>
+      <td>${dias!==null?`<span class="badge bvenc">${dias}d atrás</span>`:'<span class="badge bprox">Futuro</span>'}</td>
+      <td><button class="btn g" style="padding:3px 8px;font-size:11px" onclick="event.stopPropagation();abrirEdicao(${r.id})">✏️</button></td>
+    </tr>`;
+  }).join('');
+  const pages=Math.ceil(alertData.length/PERAL)||1;
+  const pi=document.getElementById('alertPagInfo');
+  if(pi)pi.textContent=`${alertData.length.toLocaleString('pt-BR')} registros · pág. ${alertPage}/${pages}`;
+}
+function changeAlertPage(d){const pages=Math.ceil(alertData.length/PERAL)||1;alertPage=Math.max(1,Math.min(pages,alertPage+d));renderTbAlertas();}
+function exportarAlertas(){
+  if(!alertData.length){toast('Nenhum dado','warn');return;}
+  const ws=XLSX.utils.json_to_sheet(alertData);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Alertas');
+  XLSX.writeFile(wb,'alertas_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Exportado!');
+}
+
+// ── MAPA ──────────────────────────────────────────────
+async function carregarMapa(){
+  mapaData=await api('/api/mapa');
+  renderMapa();
+}
+function renderMapa(){
+  const mode=document.getElementById('mapaMode').value;
+  const leg=document.getElementById('mapaLeg');
+  const grid=document.getElementById('mapaGrid');
+  const tooltip=document.getElementById('tooltip');
+  if(!grid)return;
+  grid.innerHTML='';
+  const legendas={
+    ocupacao:[{c:'#e8e6e0',l:'Vazio'},{c:'#2a5c3f',l:'Ocupado'},{c:'#1a3a6b',l:'Múltiplos'},{c:'#8b3060',l:'Infantil'}],
+    exumacao:[{c:'#e8e6e0',l:'Vazio'},{c:'#d0e8d8',l:'Sem exumação'},{c:'#c07800',l:'Exumação total'},{c:'#2a5c3f',l:'Parcial'}],
+    alertas:[{c:'#e8e6e0',l:'Vazio'},{c:'#d0e8d8',l:'Normal'},{c:'#f5c542',l:'Parcial vencido'},{c:'#8b2020',l:'Todos vencidos'}],
+  };
+  if(leg)leg.innerHTML=legendas[mode].map(l=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2)"><div style="width:12px;height:12px;border-radius:3px;background:${l.c};flex-shrink:0"></div>${l.l}</div>`).join('');
+  const byQ={};
+  mapaData.forEach(r=>{
+    const q=r.sep_quadra,l=r.sep_bloclote;
+    if(!byQ[q])byQ[q]={};
+    byQ[q][l]={t:r.total,e:r.exumados,v:r.vencidos,tipo:r.tipo||''};
+  });
+  Object.keys(byQ).sort().forEach(q=>{
+    const lotes=byQ[q];
+    const nums=Object.keys(lotes).map(Number).filter(n=>!isNaN(n));
+    if(!nums.length)return;
+    const maxL=Math.max(...nums);
+    if(maxL>250)return;
+    const cols=Math.min(Math.ceil(Math.sqrt(maxL)),12);
+    const block=document.createElement('div');block.className='qblock';
+    block.innerHTML=`<div class="qhdr"><span>Q-${q}</span><span style="font-size:9px">${maxL}</span></div>`;
+    const ql=document.createElement('div');ql.className='qlotes';ql.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+    for(let i=1;i<=maxL;i++){
+      const info=lotes[String(i)];
+      const el=document.createElement('div');el.className='lote';
+      const sz=Math.min(20,130/cols);el.style.width=sz+'px';
+      let color='#e8e6e0';
+      if(info){
+        if(mode==='ocupacao'){color=(info.tipo||'').toLowerCase().includes('infantil')?'#8b3060':info.t>1?'#1a3a6b':'#2a5c3f';}
+        else if(mode==='exumacao'){color=info.e===info.t?'#c07800':info.e>0?'#2a5c3f':'#d0e8d8';}
+        else{color=info.v>0?(info.v===info.t?'#8b2020':'#f5c542'):'#d0e8d8';}
+      }
+      el.style.background=color;
+      el.addEventListener('mouseenter',e=>{
+        let h=`<strong>Q-${q} · Lote ${i}</strong><br>`;
+        if(info){h+=`Registros: ${info.t}`;if(info.e)h+=`<br>Exumados: ${info.e}`;if(info.v)h+=`<br><span style="color:#f5a0a0">⚠️ Vencidos: ${info.v}</span>`;if(info.tipo)h+=`<br>${info.tipo.replace(/^\d+-/,'')}`;} else h+='Vazio';
+        tooltip.innerHTML=h;tooltip.style.display='block';
+      });
+      el.addEventListener('mousemove',e=>{tooltip.style.left=(e.clientX+12)+'px';tooltip.style.top=(e.clientY-10)+'px';});
+      el.addEventListener('mouseleave',()=>tooltip.style.display='none');
+      el.addEventListener('click',()=>{
+        if(!info)return;
+        document.getElementById('fQuadra').value=q;
+        buscar(1);
+        navTo(document.querySelector('[data-pg="registros"]'));
+        toast(`Filtrado: Q-${q}`);
+      });
+      ql.appendChild(el);
+    }
+    block.appendChild(ql);grid.appendChild(block);
+  });
+}
+
+// ── REGISTROS ─────────────────────────────────────────
+async function carregarOpcoes(){
+  const o=await api('/api/opcoes');
+  const fq=document.getElementById('fQuadra');
+  if(fq)o.quadras.forEach(q=>{const op=document.createElement('option');op.value=q;op.textContent='Q-'+q;fq.appendChild(op);});
+  const fj=document.getElementById('fJazigo');
+  if(fj)o.jazigos.forEach(j=>{const op=document.createElement('option');op.value=j;op.textContent=j.replace(/^\d+-/,'');fj.appendChild(op);});
+  const fd=document.getElementById('fDestino');
+  if(fd)o.destinos.forEach(d=>{const op=document.createElement('option');op.value=d;op.textContent=d.replace(/^\d+-/,'');fd.appendChild(op);});
+  const fh=document.getElementById('fHistorico');
+  if(fh)o.historicos.forEach(h=>{const op=document.createElement('option');op.value=h;op.textContent=String(h).length>38?String(h).substring(0,38)+'…':String(h);fh.appendChild(op);});
+}
+
+async function buscar(p=1){
+  regPage=p;
+  const q=encodeURIComponent(document.getElementById('srch').value||'');
+  const sexo=document.getElementById('fSexo').value;
+  const exum=document.getElementById('fExum').value;
+  const quadra=encodeURIComponent(document.getElementById('fQuadra').value);
+  const jazigo=encodeURIComponent(document.getElementById('fJazigo').value);
+  const destino=encodeURIComponent(document.getElementById('fDestino').value);
+  const historico=encodeURIComponent(document.getElementById('fHistorico').value);
+  const url=`/api/falecidos?q=${q}&sexo=${sexo}&quadra=${quadra}&jazigo=${jazigo}&destino=${destino}&historico=${historico}&exumado=${exum}&page=${regPage}&sort=${sortCol}&dir=${sortDir}`;
+  const d=await api(url);
+  regTotal=d.total; filteredCache=d.data;
+  renderTabela(d);
+}
+
+function sortBy(col){if(sortCol===col)sortDir=sortDir==='asc'?'desc':'asc';else{sortCol=col;sortDir='asc';}buscar(1);}
+function changePage(d){const pages=Math.ceil(regTotal/PER)||1;regPage=Math.max(1,Math.min(pages,regPage+d));buscar(regPage);}
+
+function renderTabela(d){
+  const thead=document.getElementById('thead');
+  const tbody=document.getElementById('tbody');
+  if(!thead||!tbody)return;
+  thead.innerHTML='<tr>'+COLS.map(c=>{const arr=sortCol===c.k?(sortDir==='asc'?' ↑':' ↓'):'';return `<th style="width:${c.w}" onclick="sortBy('${c.k}')">${c.l}${arr}</th>`;}).join('')+(perfil!=='consulta'?'<th style="width:50px"></th>':'')+'</tr>';
+  const hoje=new Date();hoje.setHours(0,0,0,0);const p30=new Date(hoje.getTime()+30*864e5);
+  const parseD=v=>{if(!v)return null;const p=String(v).split(' ')[0].split('/');if(p.length===3){const y=p[2].length===2?'20'+p[2]:p[2];return new Date(parseInt(y),parseInt(p[0])-1,parseInt(p[1]));}return null;};
+  tbody.innerHTML=d.data.map(r=>{
+    const sb=r.sexofale==='M'?'<span class="badge bm">M</span>':r.sexofale==='F'?'<span class="badge bf">F</span>':'–';
+    const prev=parseD(r.sep_dtprevexum);
+    const hasE=r.exa_datexu&&String(r.exa_datexu).trim()!=='';
+    let ex='<span class="badge bno">–</span>';
+    if(hasE)ex='<span class="badge bex">Exumado</span>';
+    else if(prev&&prev<hoje)ex='<span class="badge bvenc">Vencido</span>';
+    else if(prev&&prev<=p30)ex='<span class="badge bprox">Próximo</span>';
+    const jaz=(r.sep_tipojaz||'').replace(/^\d+-/,'').substring(0,18)||'–';
+    const nome=r.nome||`<em style="color:var(--t3)">sem nome</em>`;
+    let cls='';if(!hasE&&prev&&prev<hoje)cls='row-alert';else if(!hasE&&prev&&prev<=p30)cls='row-warn';
+    const btn=perfil!=='consulta'?`<td><button class="btn" style="padding:3px 8px;font-size:11px" onclick="event.stopPropagation();abrirEdicao(${r.id})">✏️</button></td>`:'';
+    return `<tr class="${cls}" onclick="verDetalhe(${r.id})">
+      <td>${r.numctfal||'–'}</td><td title="${r.nome||''}">${nome}</td><td>${sb}</td>
+      <td>${r.dtfaleci||'–'}</td><td>${r.sep_quadra||'–'}</td><td>${r.sep_bloclote||'–'}</td>
+      <td title="${r.sep_tipojaz||''}">${jaz}</td><td>${r.sep_dtprevexum||'–'}</td><td>${ex}</td>${btn}
+    </tr>`;
+  }).join('');
+  const pages=Math.ceil(regTotal/PER)||1;
+  const pi=document.getElementById('pagInfo');if(pi)pi.textContent=`${regTotal.toLocaleString('pt-BR')} registros · pág. ${regPage}/${pages}`;
+  const ri=document.getElementById('regInfo');if(ri)ri.textContent='';
+}
+
+// ── DETALHE ───────────────────────────────────────────
+async function verDetalhe(id){
+  detailId=id;
+  const r=await api(`/api/falecidos/${id}`);
+  const fv=v=>(v&&String(v).trim()!=='')?`<span class="fv">${String(v)}</span>`:'<span class="fv empty">–</span>';
+  const fd=v=>{const d=fmtD(v);return d?`<span class="fv">${d}</span>`:'<span class="fv empty">–</span>';};
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const prev=parseD2(r.sep_dtprevexum);
+  const hasE=r.exa_datexu&&String(r.exa_datexu).trim()!=='';
+  const alertaExum=!hasE&&prev&&prev<hoje;
+  const alertaBanner=alertaExum?`<div style="background:var(--rl);border:1px solid #e8a0a0;border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--red);font-weight:500;">⚠️ Exumação vencida há ${Math.floor((hoje-prev)/864e5)} dias (prevista ${fmtD(r.sep_dtprevexum)})</div>`:'';
+  document.getElementById('modDetail').innerHTML=`
+    <div class="mhdr">
+      <h2>${r.nome||'Sem nome'} <small style="font-weight:400;color:var(--t2);font-size:11px">#${r.numctfal||r.id}</small></h2>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn" onclick="window.print()" style="font-size:12px">🖨️ Imprimir</button>
+        <button class="mclose" onclick="fecharOv('ovDetail')">×</button>
+      </div>
+    </div>
+    <div class="mbody">
+      ${alertaBanner}
+      <div class="slbl">Dados pessoais</div>
+      <div class="fgrid">
+        ${vf('Sexo',fv(r.sexofale))}${vf('Idade',fv(r.idadanos?Math.round(r.idadanos)+' anos':null))}
+        ${vf('Nascimento',fd(r.dtnasc))}${vf('Falecimento',fd(r.dtfaleci))}
+        ${vf('Mãe',fv(r.mae))}${vf('Pai',fv(r.pai))}
+        ${vf('Doc. óbito',fv(r.docobito))}${vf('Operador',fv(r.operador))}
+      </div>
+      <div class="slbl">Responsável (declarante)</div>
+      <div class="fgrid">
+        ${vf('Nome',fv(r.dec_nome))}${vf('Parentesco',fv(r.dec_parentes))}
+        ${vf('RG',fv(r.dec_rg))}${vf('CPF',fv(r.dec_cpf))}
+        ${vf('Endereço',fv(r.dec_ender?(r.dec_ender+(r.dec_endernum?', '+r.dec_endernum:'')):null))}
+        ${vf('Bairro',fv(r.dec_bairro))}${vf('Município/UF',fv(r.dec_munic?(r.dec_munic+(r.dec_uf?' – '+r.dec_uf:'')):null))}
+        ${vf('Telefone',fv(r.dec_fones))}
+      </div>
+      <div class="slbl">Registro</div>
+      <div class="fgrid">
+        ${vf('Livro',fv(r.livronum))}${vf('Página',fv(r.livropag))}
+        ${vf('Ordem',fv(r.livroord))}${vf('Proc/Ano',fv(r.numprocano))}
+      </div>
+      <div class="slbl">Sepultamento</div>
+      <div class="fgrid">
+        ${vf('Data',fd(r.sep_data))}${vf('Tipo de jazigo',fv(r.sep_tipojaz?(r.sep_tipojaz.replace(/^\d+-/,'')):null))}
+        ${vf('Quadra',fv(r.sep_quadra))}${vf('Bloco/Lote',fv(r.sep_bloclote))}
+        ${vf('Nicho/Gaveta',fv(r.sep_nicolgav))}${vf('Lacre',fv(r.sep_lacre))}
+        ${vf('Previsão exumação',fd(r.sep_dtprevexum))}
+      </div>
+      <div class="slbl">Exumação (AK / AP / AQ)</div>
+      <div class="fgrid">
+        ${vf('Data da exumação',fd(r.exa_datexu))}${vf('Tipo jazigo destino (AK)',fv(r.exa_tipojaz?(r.exa_tipojaz.replace(/^\d+-/,'')):null))}
+        ${vf('Quadra destino',fv(r.exa_quadra))}${vf('Lote destino',fv(r.exa_bloclote))}
+        ${vf('Destino ossário/gaveta (AP)',fv(r.exa_nicolgav))}${vf('Nº lacre (AQ)',fv(r.exa_lacre))}
+        ${vf('Data reinumação',fv(r.exa_datreinuma))}${vf('ISN?',fv(r.exa_cemisn))}
+      </div>
+      ${r.historico&&String(r.historico).trim()?`<div class="slbl">Histórico (BC)</div><div style="background:var(--al);border:1px solid #e8c97a;border-radius:var(--rs);padding:10px 14px;font-size:13px;color:var(--amber);font-weight:500;line-height:1.6">📋 ${String(r.historico).trim()}</div>`:''}
+      ${r.outrasinf&&String(r.outrasinf).trim()?`<div class="slbl">Outras informações</div><p style="font-size:13px;line-height:1.6">${r.outrasinf}</p>`:''}
+      ${r.observgeral&&String(r.observgeral).trim()?`<div class="slbl">Observações gerais</div><p style="font-size:13px;line-height:1.6">${r.observgeral}</p>`:''}
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="fecharOv('ovDetail')">Fechar</button>
+      ${perfil!=='consulta'?`<button class="btn g" onclick="fecharOv('ovDetail');abrirEdicao(${id})">✏️ Editar</button>`:''}
+      ${perfil==='admin'?`<button class="btn r" onclick="excluir(${id})">🗑 Excluir</button>`:''}
+    </div>`;
+  document.getElementById('ovDetail').classList.add('open');
+}
+function vf(label,val){return `<div class="vfield"><div class="fl">${label}</div><div>${val}</div></div>`;}
+function fmtD(v){if(!v||String(v).trim()==='')return null;const s=String(v).split(' ')[0];const p=s.split('/');if(p.length===3){const y=p[2].length===2?'20'+p[2]:p[2];return p[1]+'/'+p[0]+'/'+y;}return s;}
+function parseD2(v){if(!v)return null;const p=String(v).split(' ')[0].split('/');if(p.length===3){const y=p[2].length===2?'20'+p[2]:p[2];return new Date(parseInt(y),parseInt(p[0])-1,parseInt(p[1]));}return null;}
+
+// ── EDIÇÃO ────────────────────────────────────────────
+function abrirNovo(){detailId=null;renderForm({});}
+async function abrirEdicao(id){
+  detailId=id;
+  document.getElementById('ovDetail').classList.remove('open');
+  const r=await api(`/api/falecidos/${id}`);
+  renderForm(r);
+}
+function optsTipo(val){return TIPOS_JAZ.map(t=>`<option value="${t}"${val===t?' selected':''}>${t.replace(/^\d+-/,'')||'– selecione –'}</option>`).join('');}
+function renderForm(r){
+  const v=k=>(r[k]!==undefined&&r[k]!==null&&String(r[k]).trim()!=='')?String(r[k]):'';
+  const isNovo=!detailId;
+  document.getElementById('modEdit').innerHTML=`
+    <div class="mhdr"><h2>${isNovo?'➕ Novo falecido':'✏️ Editar — '+(r.nome||'#'+r.numctfal)}</h2><button class="mclose" onclick="fecharOv('ovEdit')">×</button></div>
+    <div class="mbody">
+      <div class="slbl">Dados pessoais</div>
+      <div class="fgrid">
+        <div class="fg" style="grid-column:1/-1"><label>Nome completo *</label><input id="ef_nome" value="${v('nome')}"></div>
+        <div class="fg"><label>Sexo</label><select id="ef_sexofale"><option value="">–</option><option value="M"${v('sexofale')==='M'?' selected':''}>Masculino</option><option value="F"${v('sexofale')==='F'?' selected':''}>Feminino</option></select></div>
+        <div class="fg"><label>Nº registro</label><input id="ef_numctfal" value="${v('numctfal')}" type="number"></div>
+        <div class="fg"><label>Data nascimento</label><input id="ef_dtnasc" value="${v('dtnasc')}" placeholder="DD/MM/AAAA"></div>
+        <div class="fg"><label>Data falecimento</label><input id="ef_dtfaleci" value="${v('dtfaleci')}" placeholder="DD/MM/AAAA"></div>
+        <div class="fg"><label>Mãe</label><input id="ef_mae" value="${v('mae')}"></div>
+        <div class="fg"><label>Pai</label><input id="ef_pai" value="${v('pai')}"></div>
+        <div class="fg"><label>Doc. óbito</label><input id="ef_docobito" value="${v('docobito')}"></div>
+        <div class="fg"><label>Operador</label><input id="ef_operador" value="${v('operador')}"></div>
+      </div>
+      <div class="slbl">Responsável / Declarante</div>
+      <div class="fgrid">
+        <div class="fg"><label>Nome declarante</label><input id="ef_dec_nome" value="${v('dec_nome')}"></div>
+        <div class="fg"><label>Parentesco</label><input id="ef_dec_parentes" value="${v('dec_parentes')}"></div>
+        <div class="fg"><label>RG</label><input id="ef_dec_rg" value="${v('dec_rg')}"></div>
+        <div class="fg"><label>CPF</label><input id="ef_dec_cpf" value="${v('dec_cpf')}"></div>
+        <div class="fg"><label>Endereço</label><input id="ef_dec_ender" value="${v('dec_ender')}"></div>
+        <div class="fg"><label>Nº</label><input id="ef_dec_endernum" value="${v('dec_endernum')}"></div>
+        <div class="fg"><label>Bairro</label><input id="ef_dec_bairro" value="${v('dec_bairro')}"></div>
+        <div class="fg"><label>Município</label><input id="ef_dec_munic" value="${v('dec_munic')}"></div>
+        <div class="fg"><label>UF</label><input id="ef_dec_uf" value="${v('dec_uf')}" maxlength="2"></div>
+        <div class="fg"><label>Telefone(s)</label><input id="ef_dec_fones" value="${v('dec_fones')}"></div>
+      </div>
+      <div class="slbl">Registro em livro</div>
+      <div class="fgrid three">
+        <div class="fg"><label>Livro</label><input id="ef_livronum" value="${v('livronum')}"></div>
+        <div class="fg"><label>Página</label><input id="ef_livropag" value="${v('livropag')}"></div>
+        <div class="fg"><label>Ordem</label><input id="ef_livroord" value="${v('livroord')}"></div>
+        <div class="fg"><label>Proc/Ano</label><input id="ef_numprocano" value="${v('numprocano')}"></div>
+        <div class="fg"><label>Data cadastro</label><input id="ef_dtcadastro" value="${v('dtcadastro')}" placeholder="DD/MM/AAAA"></div>
+      </div>
+      <div class="slbl">Sepultamento</div>
+      <div class="fgrid">
+        <div class="fg"><label>Data</label><input id="ef_sep_data" value="${v('sep_data')}" placeholder="DD/MM/AAAA"></div>
+        <div class="fg"><label>Tipo jazigo</label><select id="ef_sep_tipojaz">${optsTipo(v('sep_tipojaz'))}</select></div>
+        <div class="fg"><label>Quadra</label><input id="ef_sep_quadra" value="${v('sep_quadra')}"></div>
+        <div class="fg"><label>Bloco/Lote</label><input id="ef_sep_bloclote" value="${v('sep_bloclote')}"></div>
+        <div class="fg"><label>Nicho/Gaveta</label><input id="ef_sep_nicolgav" value="${v('sep_nicolgav')}"></div>
+        <div class="fg"><label>Lacre</label><input id="ef_sep_lacre" value="${v('sep_lacre')}"></div>
+        <div class="fg"><label>Previsão exumação</label><input id="ef_sep_dtprevexum" value="${v('sep_dtprevexum')}" placeholder="DD/MM/AAAA"></div>
+      </div>
+      <div class="slbl">✅ Dar baixa — Exumação (AK / AP / AQ)</div>
+      <div class="fgrid">
+        <div class="fg"><label>Data da exumação *</label><input id="ef_exa_datexu" value="${v('exa_datexu')}" placeholder="DD/MM/AAAA" style="border-color:${v('exa_datexu')?'var(--green)':'var(--border)'}"></div>
+        <div class="fg"><label>Tipo jazigo destino (AK)</label><select id="ef_exa_tipojaz">${optsTipo(v('exa_tipojaz'))}</select></div>
+        <div class="fg"><label>Quadra destino</label><input id="ef_exa_quadra" value="${v('exa_quadra')}"></div>
+        <div class="fg"><label>Lote destino</label><input id="ef_exa_bloclote" value="${v('exa_bloclote')}"></div>
+        <div class="fg"><label>Destino ossário/gaveta (AP)</label><input id="ef_exa_nicolgav" value="${v('exa_nicolgav')}"></div>
+        <div class="fg"><label>Nº lacre exumação (AQ)</label><input id="ef_exa_lacre" value="${v('exa_lacre')}"></div>
+        <div class="fg"><label>Data reinumação</label><input id="ef_exa_datreinuma" value="${v('exa_datreinuma')}" placeholder="DD/MM/AAAA"></div>
+        <div class="fg"><label>ISN?</label><input id="ef_exa_cemisn" value="${v('exa_cemisn')}"></div>
+      </div>
+      <div class="slbl">Histórico e observações</div>
+      <div class="fgrid">
+        <div class="fg" style="grid-column:1/-1"><label>Histórico (BC)</label><textarea id="ef_historico" rows="2">${v('historico')}</textarea></div>
+        <div class="fg" style="grid-column:1/-1"><label>Outras informações</label><textarea id="ef_outrasinf" rows="2">${v('outrasinf')}</textarea></div>
+        <div class="fg" style="grid-column:1/-1"><label>Observações gerais</label><textarea id="ef_observgeral" rows="2">${v('observgeral')}</textarea></div>
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="fecharOv('ovEdit')">Cancelar</button>
+      <button class="btn g" id="btnSalvarForm" onclick="salvarEdicao()">💾 Salvar</button>
+    </div>`;
+  document.getElementById('ovEdit').classList.add('open');
+}
+
+const CAMPOS=['nome','numctfal','sexofale','dtnasc','dtfaleci','mae','pai','docobito','operador',
+  'dec_nome','dec_parentes','dec_rg','dec_cpf','dec_ender','dec_endernum','dec_bairro','dec_munic','dec_uf','dec_fones',
+  'livronum','livropag','livroord','numprocano','dtcadastro',
+  'sep_data','sep_tipojaz','sep_quadra','sep_bloclote','sep_nicolgav','sep_lacre','sep_dtprevexum',
+  'exa_datexu','exa_tipojaz','exa_quadra','exa_bloclote','exa_nicolgav','exa_lacre','exa_datreinuma','exa_cemisn',
+  'historico','outrasinf','observgeral'];
+
+async function salvarEdicao(){
+  const nome=document.getElementById('ef_nome').value.trim();
+  if(!nome){toast('Nome é obrigatório','err');return;}
+  const btn=document.getElementById('btnSalvarForm');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando…';
+  const data={};
+  CAMPOS.forEach(c=>{const el=document.getElementById('ef_'+c);if(el)data[c]=el.value.trim()||'';});
+  try{
+    if(detailId) await api(`/api/falecidos/${detailId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    else await api('/api/falecidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    fecharOv('ovEdit');
+    toast(detailId?'✅ Registro atualizado!':'✅ Registro criado!');
+    buscar(regPage);
+    await carregarDash();
+    await carregarMapa();
+  }catch(e){toast(e.message,'err');}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='💾 Salvar';}}
+}
+
+async function excluir(id){
+  const r=await api(`/api/falecidos/${id}`);
+  if(!confirm(`Excluir "${r.nome||'este registro'}"?\n\nEsta ação não pode ser desfeita.`))return;
+  try{
+    await api(`/api/falecidos/${id}`,{method:'DELETE'});
+    fecharOv('ovDetail');toast('🗑 Registro excluído');
+    buscar(regPage);carregarDash();
+  }catch(e){toast(e.message,'err');}
+}
+
+// ── EXPORTAR / SALVAR ─────────────────────────────────
+async function exportarFiltrado(){
+  const q=encodeURIComponent(document.getElementById('srch').value||'');
+  const sexo=document.getElementById('fSexo').value;
+  const exum=document.getElementById('fExum').value;
+  const quadra=encodeURIComponent(document.getElementById('fQuadra').value);
+  const jazigo=encodeURIComponent(document.getElementById('fJazigo').value);
+  const destino=encodeURIComponent(document.getElementById('fDestino').value);
+  const historico=encodeURIComponent(document.getElementById('fHistorico').value);
+  const d=await api(`/api/falecidos?q=${q}&sexo=${sexo}&quadra=${quadra}&jazigo=${jazigo}&destino=${destino}&historico=${historico}&exumado=${exum}&page=1&per_page=99999`);
+  const ws=XLSX.utils.json_to_sheet(d.data);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Falecidos');
+  XLSX.writeFile(wb,'falecidos_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast(`⬇ ${d.data.length.toLocaleString('pt-BR')} registros exportados`);
+}
+
+async function salvarBase(){
+  const d=await api('/api/falecidos?page=1&per_page=99999');
+  const ws=XLSX.utils.json_to_sheet(d.data);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'FALECIDOS');
+  XLSX.writeFile(wb,'FALECIDOS_CONSOLIDADO_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('💾 Base completa exportada!');
+}
+
+// ── RELATÓRIOS ────────────────────────────────────────
+async function gerarRel(tipo){
+  const btn=document.querySelector(`.rel-card[onclick="gerarRel('${tipo}')"]`);
+  if(btn){btn.style.opacity='.6';btn.style.pointerEvents='none';}
+  try{
+    const dados=await api(`/api/relatorio/${tipo}`);
+    const col={
+      vencidos:['numctfal','nome','sep_quadra','sep_bloclote','sep_tipojaz','sep_dtprevexum'],
+      proximos30:['numctfal','nome','sep_quadra','sep_bloclote','sep_tipojaz','sep_dtprevexum'],
+      proximos90:['numctfal','nome','sep_quadra','sep_bloclote','sep_tipojaz','sep_dtprevexum'],
+      exumados:['numctfal','nome','sep_quadra','sep_bloclote','exa_datexu','exa_tipojaz','exa_nicolgav','exa_lacre','historico'],
+      anual:['ano','obitos','exumacoes'],
+      lotesVagos:['quadra','total','exumados','sem_exumacao'],
+    }[tipo]||Object.keys(dados[0]||{});
+    const titulos={vencidos:'⚠️ Exumações vencidas',proximos30:'📅 Próximos 30 dias',proximos90:'🗓 Próximos 90 dias',exumados:'✅ Exumações realizadas',anual:'📊 Resumo anual',lotesVagos:'🗺 Lotes por quadra'};
+    renderRelOutput(titulos[tipo],dados,col);
+  }finally{if(btn){btn.style.opacity='';btn.style.pointerEvents='';}}
+}
+
+function renderRelOutput(titulo,dados,colunas){
+  const out=document.getElementById('relOutput');
+  if(!dados.length){out.innerHTML='<div class="tcard" style="padding:20px;text-align:center;color:var(--t2)">Nenhum registro.</div>';return;}
+  const hdrs=colunas.map(c=>`<th style="background:var(--s2);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);color:var(--t2)">${c}</th>`).join('');
+  const rows=dados.slice(0,500).map(r=>`<tr>${colunas.map(c=>{let v=r[c]!==undefined?String(r[c]||''):'–';if(c.includes('tipojaz'))v=v.replace(/^\d+-/,'');return `<td style="padding:8px 13px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis">${v||'–'}</td>`;}).join('')}</tr>`).join('');
+  out.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px;flex-wrap:wrap;gap:8px;"><div><h3 style="font-size:15px;font-weight:600">${titulo}</h3><p style="font-size:12px;color:var(--t2);margin-top:2px">${dados.length.toLocaleString('pt-BR')} registros${dados.length>500?' · exibindo 500':''}</p></div><button class="btn a" onclick="exportRelOutput()">⬇ Exportar Excel</button></div><div class="tcard"><div class="twrap"><table><thead><tr>${hdrs}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  window._relD=dados;window._relC=colunas;
+  out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function exportRelOutput(){
+  if(!window._relD)return;
+  const ws=XLSX.utils.json_to_sheet(window._relD,{header:window._relC});
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Relatório');
+  XLSX.writeFile(wb,'relatorio_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Relatório exportado!');
+}
+
+// ── ADMIN ─────────────────────────────────────────────
+async function carregarUsuarios(){
+  const rows=await api('/api/usuarios');
+  const badges={admin:'<span class="badge badm">Admin</span>',operador:'<span class="badge bop">Operador</span>',consulta:'<span class="badge bco">Consulta</span>'};
+  const tb=document.getElementById('tbUsuarios');
+  if(tb)tb.innerHTML=rows.map(u=>`<tr><td>${u.nome}</td><td style="color:var(--t2)">${u.login}</td><td>${badges[u.perfil]||u.perfil}</td><td>${u.ativo?'✅':'❌'}</td><td><button class="btn" style="padding:3px 8px;font-size:11px" onclick="editarUsuario(${JSON.stringify(JSON.stringify(u))})">✏️</button></td></tr>`).join('');
+}
+
+async function carregarAuditoria(){
+  const d=await api('/api/auditoria');
+  const tb=document.getElementById('tbAudit');
+  if(tb)tb.innerHTML=d.data.map(r=>`<tr><td>${r.usuario_nome||'–'}</td><td>${r.acao} ${r.detalhe?'· '+String(r.detalhe).substring(0,30):''}</td><td style="color:var(--t2);font-size:11px">${r.criado_em||'–'}</td></tr>`).join('');
+}
+
+function abrirNovoUsuario(){renderFormUsuario(null);}
+function editarUsuario(js){renderFormUsuario(JSON.parse(js));}
+function renderFormUsuario(u){
+  const v=f=>u?(u[f]||')':'';
+  document.getElementById('modUsr').innerHTML=`
+    <div class="mhdr"><h2>${u?'Editar usuário':'Novo usuário'}</h2><button class="mclose" onclick="fecharOv('ovUsr')">×</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Nome *</label><input id="u_nome" value="${u?u.nome:''}"></div>
+        <div class="fg"><label>Login *</label><input id="u_login" value="${u?u.login:''}"></div>
+        <div class="fg"><label>Senha ${u?'(deixe vazio para manter)':''} *</label><input id="u_senha" type="password" placeholder="••••••••"></div>
+        <div class="fg"><label>Perfil</label><select id="u_perfil">
+          <option value="consulta"${u&&u.perfil==='consulta'?' selected':''}>Consulta</option>
+          <option value="operador"${u&&u.perfil==='operador'?' selected':''}>Operador</option>
+          <option value="admin"${u&&u.perfil==='admin'?' selected':''}>Admin</option>
+        </select></div>
+        ${u?`<div class="fg"><label>Ativo</label><select id="u_ativo"><option value="1"${u.ativo?' selected':''}>Sim</option><option value="0"${!u.ativo?' selected':''}>Não</option></select></div>`:''}
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn" onclick="fecharOv('ovUsr')">Cancelar</button>
+      <button class="btn g" onclick="salvarUsuario(${u?u.id:'null'})">💾 Salvar</button>
+    </div>`;
+  document.getElementById('ovUsr').classList.add('open');
+}
+
+async function salvarUsuario(id){
+  const data={nome:document.getElementById('u_nome').value.trim(),login:document.getElementById('u_login').value.trim(),senha:document.getElementById('u_senha').value,perfil:document.getElementById('u_perfil').value};
+  const ael=document.getElementById('u_ativo');if(ael)data.ativo=parseInt(ael.value);
+  if(!data.nome||!data.login){toast('Nome e login obrigatórios','err');return;}
+  try{
+    if(id)await api(`/api/usuarios/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    else await api('/api/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    fecharOv('ovUsr');toast(id?'Usuário atualizado!':'Usuário criado!');carregarUsuarios();
+  }catch(e){toast(e.message,'err');}
+}
+
+async function importar(){
+  const file=document.getElementById('importFile').files[0];if(!file)return;
+  const st=document.getElementById('importStatus');st.textContent='⏳ Importando…';
+  const form=new FormData();form.append('file',file);
+  try{
+    const d=await api('/api/importar',{method:'POST',body:form});
+    st.textContent=`✅ ${d.importados.toLocaleString('pt-BR')} registros importados!`;
+    toast('Importação concluída!');
+    buscar(1);carregarDash();carregarMapa();
+  }catch(e){st.textContent='❌ Erro: '+e.message;toast(e.message,'err');}
+}
+
+init();
+</script>
+</body>
+</html>

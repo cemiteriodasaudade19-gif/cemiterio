@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cemitério — Acesso</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #1e3a2a;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 40px 44px;
+  width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.logo { text-align: center; margin-bottom: 28px; }
+.logo-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+.logo h1 { font-size: 18px; font-weight: 700; color: #1a1a18; }
+.logo p { font-size: 12px; color: #888; margin-top: 2px; }
+label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+input[type=text], input[type=password] {
+  width: 100%;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: #1a1a18;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus { border-color: #2a5c3f; }
+button {
+  width: 100%;
+  background: #2a5c3f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+button:hover { background: #3d7a57; }
+.error { background: #fdeaea; color: #8b2020; border-radius: 7px; padding: 10px 13px; font-size: 13px; margin-bottom: 14px; display: none; }
+.footer { text-align: center; margin-top: 24px; font-size: 11px; color: #aaa; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="logo-icon">🏛</span>
+    <h1>Controle de Falecidos</h1>
+    <p>Sistema de Gestão do Cemitério</p>
+  </div>
+  <div class="error" id="err"></div>
+  <label for="login">Usuário</label>
+  <input type="text" id="login" placeholder="seu.login" autocomplete="username">
+  <label for="senha">Senha</label>
+  <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+  <button onclick="entrar()" id="btn">Entrar</button>
+  <div class="footer">Acesso restrito · Dados confidenciais</div>
+</div>
+<script>
+document.getElementById('senha').addEventListener('keydown', e => { if(e.key==='Enter') entrar(); });
+async function entrar() {
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  btn.textContent = 'Aguarde…';
+  btn.disabled = true;
+  const form = new FormData();
+  form.append('login', document.getElementById('login').value);
+  form.append('senha', document.getElementById('senha').value);
+  try {
+    const r = await fetch('/auth/login', { method: 'POST', body: form });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.detail || 'Erro ao entrar'; err.style.display='block'; }
+    else { window.location.href = '/app'; }
+  } catch(e) { err.textContent = 'Erro de conexão'; err.style.display='block'; }
+  btn.textContent = 'Entrar'; btn.disabled = false;
+}
+</script>
+</body>
+</html>
